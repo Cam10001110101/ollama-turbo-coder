@@ -12,7 +12,9 @@ function loadSettings() {
         console.error("App instance not initialized in settingsManager.");
         // Return minimal defaults to avoid crashing downstream logic
         return {
+            provider: 'ollama-turbo', // Default provider
             OLLAMA_API_KEY: process.env.OLLAMA_API_KEY || "<replace me>",
+            localOllamaUrl: 'http://localhost:11434', // Local Ollama URL
             model: process.env.OLLAMA_DEFAULT_MODEL || "gpt-oss:120b",
             temperature: 0.7,
             top_p: 0.95,
@@ -29,7 +31,9 @@ function loadSettings() {
     const userDataPath = appInstance.getPath('userData');
     const settingsPath = path.join(userDataPath, 'settings.json');
     const defaultSettings = {
+        provider: 'ollama-turbo', // Default provider
         OLLAMA_API_KEY: process.env.OLLAMA_API_KEY || "<replace me>",
+        localOllamaUrl: 'http://localhost:11434', // Local Ollama URL
         model: process.env.OLLAMA_DEFAULT_MODEL || "gpt-oss:120b",
         temperature: 0.7,
         top_p: 0.95,
@@ -79,6 +83,8 @@ function loadSettings() {
             settings.toolOutputLimit = settings.toolOutputLimit ?? defaultSettings.toolOutputLimit;
             settings.customApiBaseUrl = settings.customApiBaseUrl || defaultSettings.customApiBaseUrl;
             settings.customModels = settings.customModels || defaultSettings.customModels;
+            settings.provider = settings.provider || defaultSettings.provider;
+            settings.localOllamaUrl = settings.localOllamaUrl || defaultSettings.localOllamaUrl;
 
             // Optional: Persist the potentially updated settings back to file if defaults were applied
             // fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));

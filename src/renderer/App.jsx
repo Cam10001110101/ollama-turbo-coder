@@ -229,6 +229,59 @@ function App() {
     loadInitialData();
   }, []); // Empty dependency array ensures this runs only once on mount
 
+  // Load provider-specific models when provider changes
+  useEffect(() => {
+    const loadProviderModels = async () => {
+      try {
+        const settings = await window.electron.getSettings();
+        const provider = settings.provider || 'ollama-turbo';
+        
+        // For local ollama, fetch available models from the server
+        if (provider === 'local-ollama') {
+          const localModels = await window.electron.listProviderModels();
+          
+          if (localModels && localModels.length > 0) {
+            // Convert provider models to our format
+            const modelConfigs = {};
+            localModels.forEach(model => {
+              modelConfigs[model.id] = {
+                context: model.context || 8192,
+                vision_supported: model.vision || false,
+                builtin_tools_supported: model.builtin_tools || false,
+                displayName: model.name || model.id
+              };
+            });
+            
+            setModelConfigs(modelConfigs);
+            const availableModels = localModels.map(m => m.id);
+            setModels(availableModels);
+            
+            // Select first available model if current selection is invalid
+            if (!availableModels.includes(selectedModel) && availableModels.length > 0) {
+              setSelectedModel(availableModels[0]);
+            }
+          } else {
+            // No local models available
+            setModels([]);
+            setModelConfigs({});
+          }
+        } else {
+          // For Ollama Turbo, use the existing model configs
+          const configs = await window.electron.getModelConfigs();
+          setModelConfigs(configs);
+          const availableModels = Object.keys(configs).filter(key => key !== 'default');
+          setModels(availableModels);
+        }
+      } catch (error) {
+        console.error('Error loading provider models:', error);
+      }
+    };
+
+    if (initialLoadComplete) {
+      loadProviderModels();
+    }
+  }, [initialLoadComplete]); // Re-run when initial load completes
+
   // Save model selection to settings when it changes, ONLY after initial load
   useEffect(() => {
     // Prevent saving during initial setup before models/settings are loaded/validated
