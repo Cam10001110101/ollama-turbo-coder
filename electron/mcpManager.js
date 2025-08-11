@@ -384,7 +384,7 @@ async function connectConfiguredMcpServers() {
     const settings = loadSettingsFunc();
     
     console.log('[MCP AUTO-CONNECT] Settings loaded:', {
-        hasApiKey: !!(settings.GROQ_API_KEY && settings.GROQ_API_KEY !== "<replace me>"),
+        hasApiKey: !!(settings.OLLAMA_API_KEY && settings.OLLAMA_API_KEY !== "<replace me>"),
         mcpServersCount: Object.keys(settings.mcpServers || {}).length,
         disabledCount: (settings.disabledMcpServers || []).length
     });

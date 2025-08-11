@@ -369,7 +369,7 @@ function ChatInput({
 							onKeyDown={handleKeyDown}
 							onPaste={handlePaste}
 							onHeightChange={handleHeightChange}
-							placeholder={isDragOver ? "Drop files here..." : "Ask Groq anything..."}
+							placeholder={isDragOver ? "Drop files here..." : "Ask Ollama anything..."}
 							className={cn(
 								"w-full px-4 py-3 bg-background/80 backdrop-blur-sm resize-none border rounded-2xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/50 transition-all duration-200",
 								isDragOver 

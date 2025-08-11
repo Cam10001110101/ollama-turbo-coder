@@ -12,10 +12,9 @@ import Switch from '../components/ui/Switch';
 
 function Settings() {
   const [settings, setSettings] = useState({
-    GROQ_API_KEY: '',
+    OLLAMA_API_KEY: '',
     temperature: 0.7,
     top_p: 0.95,
-    reasoning_effort: 'medium',
     mcpServers: {},
     disabledMcpServers: [],
     customSystemPrompt: '',
@@ -23,11 +22,7 @@ function Settings() {
     customCompletionUrl: '',
     toolOutputLimit: 8000,
     customApiBaseUrl: '',
-    customModels: {},
-    builtInTools: {
-      codeInterpreter: false,
-      browserSearch: false
-    }
+    customModels: {}
   });
   const [saveStatus, setSaveStatus] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,21 +60,12 @@ function Settings() {
         if (!settingsData.disabledMcpServers) {
             settingsData.disabledMcpServers = [];
         }
-        if (!settingsData.builtInTools) {
-            settingsData.builtInTools = {
-                codeInterpreter: false,
-                browserSearch: false
-            };
-        }
-        if (!settingsData.reasoning_effort) {
-            settingsData.reasoning_effort = 'medium';
-        }
         setSettings(settingsData);
       } catch (error) {
         console.error('Error loading settings:', error);
         setSettings(prev => ({
             ...prev,
-            GROQ_API_KEY: '',
+            OLLAMA_API_KEY: '',
             temperature: 0.7,
             top_p: 0.95,
             mcpServers: {},
@@ -90,11 +76,6 @@ function Settings() {
             toolOutputLimit: 8000,
             customApiBaseUrl: '',
             customModels: {},
-            builtInTools: {
-                codeInterpreter: false,
-                browserSearch: false
-            },
-            reasoning_effort: 'medium'
         }));
       }
     };
@@ -172,17 +153,6 @@ function Settings() {
     saveSettings(updatedSettings);
   };
 
-  const handleBuiltInToolToggle = (toolName, checked) => {
-    const updatedSettings = {
-      ...settings,
-      builtInTools: {
-        ...settings.builtInTools,
-        [toolName]: checked
-      }
-    };
-    setSettings(updatedSettings);
-    saveSettings(updatedSettings);
-  };
 
   const handleNumberChange = (e) => {
     const { name, value } = e.target;
@@ -818,13 +788,13 @@ function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="api-key">API Key</Label>
+                  <Label htmlFor="api-key">Ollama API Key</Label>
                   <div className="relative">
                     <Input
                       type={showApiKey ? "text" : "password"}
                       id="api-key"
-                      name="GROQ_API_KEY"
-                      value={settings.GROQ_API_KEY || ''}
+                      name="OLLAMA_API_KEY"
+                      value={settings.OLLAMA_API_KEY || ''}
                       onChange={handleChange}
                       placeholder="Enter your API key"
                       className="pr-10"
@@ -853,7 +823,7 @@ function Settings() {
                   />
                   <p className="text-xs text-muted-foreground">
                     Override the default API endpoint. You can include '/openai/v1' in the URL or just the base path. 
-                    The system will automatically handle the correct endpoint construction. Leave empty to use the default Groq API.
+                    The system will automatically handle the correct endpoint construction. Leave empty to use the default Ollama API at ollama.com.
                   </p>
                 </div>
               </CardContent>
@@ -913,29 +883,6 @@ function Settings() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="reasoning_effort">
-                      Reasoning Effort: <Badge variant="outline">{settings.reasoning_effort}</Badge>
-                    </Label>
-                    <Select
-                      value={settings.reasoning_effort}
-                      onValueChange={(value) => handleSelectChange('reasoning_effort', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select reasoning effort" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Controls reasoning depth for gpt-oss models (low: fast, high: more thorough)
-                    </p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -961,54 +908,6 @@ function Settings() {
               </CardContent>
             </Card>
 
-            {/* Built-in Tools Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Zap className="h-5 w-5 text-primary" />
-                  <span>Built-in Tools</span>
-                </CardTitle>
-                <CardDescription>
-                  Enable built-in tools for supported models (OpenAI and Emberfow models only).
-                  These tools don't require MCP servers and work directly with the model.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label htmlFor="code-interpreter" className="font-medium">
-                        Code Interpreter
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Run Python code for calculations, data analysis, and more
-                      </p>
-                    </div>
-                    <Switch
-                      id="code-interpreter"
-                      checked={settings.builtInTools?.codeInterpreter || false}
-                      onChange={(e) => handleBuiltInToolToggle('codeInterpreter', e.target.checked)}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label htmlFor="browser-search" className="font-medium">
-                        Browser Search
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Search the web for real-time information and current events
-                      </p>
-                    </div>
-                    <Switch
-                      id="browser-search"
-                      checked={settings.builtInTools?.browserSearch || false}
-                      onChange={(e) => handleBuiltInToolToggle('browserSearch', e.target.checked)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Custom System Prompt */}
             <Card>

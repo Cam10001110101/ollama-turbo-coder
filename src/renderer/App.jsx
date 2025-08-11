@@ -69,7 +69,7 @@ function App() {
   // const [messages, setMessages] = useState([]); // Remove local state
   const { messages, setMessages } = useChat(); // Use context state
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('llama-3.3-70b-versatile');
+  const [selectedModel, setSelectedModel] = useState('gpt-oss:120b');
   const [mcpTools, setMcpTools] = useState([]);
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(false);
   const [mcpServersStatus, setMcpServersStatus] = useState({ loading: false, message: "" });
@@ -889,8 +889,8 @@ function App() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <img 
-                src="./groqLogo.png" 
-                alt="Groq Logo" 
+                src="./ollama.svg" 
+                alt="Ollama Logo" 
                 className="h-8 w-auto"
               />
             </div>
@@ -941,7 +941,7 @@ function App() {
                     Build Fast
                   </h1>
                   <p className="text-xl text-muted-foreground max-w-2xl">
-                    Chat with AI models powered by Groq's lightning-fast inference engine
+                    Chat with AI models powered by Ollama Turbo's accelerated infrastructure
                   </p>
                 </div>
 

@@ -1,83 +1,20 @@
 const BASE_MODEL_CONTEXT_SIZES = {
   default: {
-    context: 8192,
-    vision_supported: false,
-    builtin_tools_supported: false,
-  },
-  "openai/gpt-oss-20b": {
-    context: 131072,
-    vision_supported: false,
-    builtin_tools_supported: true,
-  },
-  "openai/gpt-oss-120b": {
-    context: 131072,
-    vision_supported: false,
-    builtin_tools_supported: true,
-  },
-  "moonshotai/kimi-k2-instruct": {
-    context: 131072,
-    vision_supported: true,
-    builtin_tools_supported: false,
-  },
-  "meta-llama/llama-4-scout-17b-16e-instruct": {
-    context: 131072,
-    vision_supported: true,
-    builtin_tools_supported: false,
-  },
-  "meta-llama/llama-4-maverick-17b-128e-instruct": {
-    context: 131072,
-    vision_supported: true,
-    builtin_tools_supported: false,
-  },
-  "compound-beta": {
     context: 131072,
     vision_supported: false,
     builtin_tools_supported: false,
   },
-  "qwen/qwen3-32b": {
+  "gpt-oss:20b": {
     context: 131072,
     vision_supported: false,
     builtin_tools_supported: false,
+    displayName: "GPT-OSS 20B"
   },
-  "gemma2-9b-it": {
-    context: 8192,
+  "gpt-oss:120b": {
+    context: 131072,
     vision_supported: false,
     builtin_tools_supported: false,
-  },
-  "llama-3.3-70b-versatile": {
-    context: 128000,
-    vision_supported: false,
-    builtin_tools_supported: false,
-  },
-  "llama3-70b-8192": {
-    context: 8192,
-    vision_supported: false,
-    builtin_tools_supported: false,
-  },
-  "llama3-8b-8192": {
-    context: 8192,
-    vision_supported: false,
-    builtin_tools_supported: false,
-  },
-  "llama-3.1-8b-instant": {
-    context: 128000,
-    vision_supported: false,
-    builtin_tools_supported: false,
-  },
-  "qwen-qwq-32b": {
-    context: 128000,
-    vision_supported: true,
-    builtin_tools_supported: false,
-  },
-  "deepseek-r1-distill-llama-70b": {
-    context: 128000,
-    vision_supported: false,
-    builtin_tools_supported: false,
-  },
-  "emberglow/small": {
-    context: 8192,
-    vision_supported: false,
-    builtin_tools_supported: true,
+    displayName: "GPT-OSS 120B"
   }
 };
 

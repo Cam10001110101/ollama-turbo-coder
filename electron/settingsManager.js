@@ -12,8 +12,8 @@ function loadSettings() {
         console.error("App instance not initialized in settingsManager.");
         // Return minimal defaults to avoid crashing downstream logic
         return {
-            GROQ_API_KEY: process.env.GROQ_API_KEY || "<replace me>",
-            model: process.env.GROQ_DEFAULT_MODEL || "llama-3.3-70b-versatile",
+            OLLAMA_API_KEY: process.env.OLLAMA_API_KEY || "<replace me>",
+            model: process.env.OLLAMA_DEFAULT_MODEL || "gpt-oss:120b",
             temperature: 0.7,
             top_p: 0.95,
             mcpServers: {},
@@ -29,11 +29,10 @@ function loadSettings() {
     const userDataPath = appInstance.getPath('userData');
     const settingsPath = path.join(userDataPath, 'settings.json');
     const defaultSettings = {
-        GROQ_API_KEY: process.env.GROQ_API_KEY || "<replace me>",
-        model: process.env.GROQ_DEFAULT_MODEL || "llama-3.3-70b-versatile",
+        OLLAMA_API_KEY: process.env.OLLAMA_API_KEY || "<replace me>",
+        model: process.env.OLLAMA_DEFAULT_MODEL || "gpt-oss:120b",
         temperature: 0.7,
         top_p: 0.95,
-        reasoning_effort: 'medium',
         mcpServers: {},
         disabledMcpServers: [],
         customSystemPrompt: '',
@@ -53,29 +52,28 @@ function loadSettings() {
             const settings = { ...defaultSettings, ...loadedSettings };
 
             // Environment variables take precedence over settings file for API key
-            if (process.env.GROQ_API_KEY) {
-                settings.GROQ_API_KEY = process.env.GROQ_API_KEY;
-                console.log('Using GROQ_API_KEY from environment variable');
+            if (process.env.OLLAMA_API_KEY) {
+                settings.OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
+                console.log('Using OLLAMA_API_KEY from environment variable');
             } else {
                 // Explicitly check and apply defaults for potentially missing/undefined fields
-                settings.GROQ_API_KEY = settings.GROQ_API_KEY || defaultSettings.GROQ_API_KEY;
+                settings.OLLAMA_API_KEY = settings.OLLAMA_API_KEY || defaultSettings.OLLAMA_API_KEY;
             }
 
             settings.model = settings.model || defaultSettings.model;
             settings.temperature = settings.temperature ?? defaultSettings.temperature; // Use nullish coalescing
             settings.top_p = settings.top_p ?? defaultSettings.top_p;
-            settings.reasoning_effort = settings.reasoning_effort || defaultSettings.reasoning_effort;
             settings.mcpServers = settings.mcpServers || defaultSettings.mcpServers;
             settings.disabledMcpServers = settings.disabledMcpServers || defaultSettings.disabledMcpServers;
             settings.customSystemPrompt = settings.customSystemPrompt || defaultSettings.customSystemPrompt;
             settings.popupEnabled = settings.popupEnabled ?? defaultSettings.popupEnabled;
 
             // Log API key status for debugging (without revealing the actual key)
-            if (settings.GROQ_API_KEY && settings.GROQ_API_KEY !== "<replace me>") {
-                const keyPreview = settings.GROQ_API_KEY.substring(0, 8) + '...';
-                console.log(`GROQ_API_KEY configured: ${keyPreview}`);
+            if (settings.OLLAMA_API_KEY && settings.OLLAMA_API_KEY !== "<replace me>") {
+                const keyPreview = settings.OLLAMA_API_KEY.substring(0, 8) + '...';
+                console.log(`OLLAMA_API_KEY configured: ${keyPreview}`);
             } else {
-                console.warn('GROQ_API_KEY not configured - autocomplete will not work');
+                console.warn('OLLAMA_API_KEY not configured - autocomplete will not work');
             }
             settings.customCompletionUrl = settings.customCompletionUrl || defaultSettings.customCompletionUrl;
             settings.toolOutputLimit = settings.toolOutputLimit ?? defaultSettings.toolOutputLimit;
@@ -92,11 +90,11 @@ function loadSettings() {
             console.log('Settings file created with defaults at:', settingsPath);
 
             // Log API key status for new installations
-            if (defaultSettings.GROQ_API_KEY && defaultSettings.GROQ_API_KEY !== "<replace me>") {
-                const keyPreview = defaultSettings.GROQ_API_KEY.substring(0, 8) + '...';
-                console.log(`GROQ_API_KEY configured from environment: ${keyPreview}`);
+            if (defaultSettings.OLLAMA_API_KEY && defaultSettings.OLLAMA_API_KEY !== "<replace me>") {
+                const keyPreview = defaultSettings.OLLAMA_API_KEY.substring(0, 8) + '...';
+                console.log(`OLLAMA_API_KEY configured from environment: ${keyPreview}`);
             } else {
-                console.warn('GROQ_API_KEY not configured - please set it in .env file or settings');
+                console.warn('OLLAMA_API_KEY not configured - please set it in .env file or settings');
             }
 
             return defaultSettings;

@@ -1,7 +1,7 @@
 {
-  "name": "groq-desktop-app",
+  "name": "ollama-turbo-desktop",
   "version": "1.0.0",
-  "description": "A simple Electron app with Groq API integration",
+  "description": "Ollama Turbo Desktop - Chat interface with accelerated open-source models",
   "main": "electron/main.js",
   "type": "commonjs",
   "packageManager": "pnpm@10.9.0",
@@ -20,14 +20,16 @@
   },
   "keywords": [
     "electron",
-    "groq",
+    "ollama",
+    "turbo",
     "desktop",
-    "chat"
+    "chat",
+    "ai"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.17.2",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "ansi-to-html": "^0.7.2",
@@ -35,11 +37,11 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
     "electron-json-storage": "^4.6.0",
-    "groq-sdk": "0.16.0",
     "katex": "^0.16.22",
     "lucide-react": "^0.523.0",
     "next-themes": "^0.4.6",
     "node-fetch": "^2.6.6",
+    "ollama": "^0.5.11",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-markdown": "^10.1.0",
@@ -74,8 +76,8 @@
     "wait-on": "8.0.3"
   },
   "build": {
-    "appId": "com.groq.desktop",
-    "productName": "Groq Desktop",
+    "appId": "com.ollama.turbo.desktop",
+    "productName": "Ollama Turbo Desktop",
     "files": [
       "dist/**/*",
       "electron/**/*",
