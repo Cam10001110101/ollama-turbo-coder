@@ -289,6 +289,29 @@ app.whenReady().then(async () => {
   // Model configs handler already registered above during early initialization
   console.log("[Main Init] Continuing with remaining handlers...");
 
+  // --- Provider Management Handlers ---
+  console.log("[Main Init] Registering provider handlers...");
+  
+  // List models for current provider
+  ipcMain.handle('list-provider-models', async () => {
+    const currentSettings = loadSettings();
+    return ollamaHandler.listModels(currentSettings);
+  });
+  
+  // Validate provider connection
+  ipcMain.handle('validate-provider', async () => {
+    const currentSettings = loadSettings();
+    return ollamaHandler.validateProvider(currentSettings);
+  });
+  
+  // Get available providers
+  ipcMain.handle('get-available-providers', async () => {
+    const providerFactory = require('./providers/providerFactory');
+    return providerFactory.getAvailableProviders();
+  });
+  
+  console.log("[Main Init] Provider handlers registered");
+
   // --- Context Sharing IPC Handlers (Legacy - for URL/CLI context) ---
   console.log("[Main Init] Registering context handlers...");
   ipcMain.handle('get-pending-context', async () => {

@@ -62,6 +62,11 @@ contextBridge.exposeInMainWorld('electron', {
   // Function to get model configurations
   getModelConfigs: () => ipcRenderer.invoke('get-model-configs'),
   
+  // Provider management functions
+  listProviderModels: () => ipcRenderer.invoke('list-provider-models'),
+  validateProvider: () => ipcRenderer.invoke('validate-provider'),
+  getAvailableProviders: () => ipcRenderer.invoke('get-available-providers'),
+  
   // Add event listener for MCP server status changes
   onMcpServerStatusChanged: (callback) => {
     const listener = (event, status) => callback(status);

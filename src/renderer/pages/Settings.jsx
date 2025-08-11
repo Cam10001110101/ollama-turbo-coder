@@ -775,59 +775,151 @@ function Settings() {
               </Card>
             )}
 
-            {/* API Settings */}
+            {/* Provider Selection */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Key className="h-5 w-5 text-primary" />
-                  <span>API Configuration</span>
+                  <Zap className="h-5 w-5 text-primary" />
+                  <span>AI Provider</span>
                 </CardTitle>
                 <CardDescription>
-                  Configure your API credentials and endpoint settings
+                  Choose your AI model provider
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="api-key">Ollama API Key</Label>
-                  <div className="relative">
-                    <Input
-                      type={showApiKey ? "text" : "password"}
-                      id="api-key"
-                      name="OLLAMA_API_KEY"
-                      value={settings.OLLAMA_API_KEY || ''}
-                      onChange={handleChange}
-                      placeholder="Enter your API key"
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-10 w-10"
-                      onClick={() => setShowApiKey(!showApiKey)}
-                    >
-                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="custom-api-base-url">Custom API Base URL (Optional)</Label>
-                  <Input
-                    type="text"
-                    id="custom-api-base-url"
-                    name="customApiBaseUrl"
-                    value={settings.customApiBaseUrl || ''}
-                    onChange={handleChange}
-                    placeholder="e.g., https://api.openai.com/v1 or http://127.0.0.1:8000/api"
-                  />
+                  <Label htmlFor="provider">Provider</Label>
+                  <Select
+                    value={settings.provider || 'ollama-turbo'}
+                    onValueChange={(value) => handleSelectChange('provider', value)}
+                  >
+                    <SelectTrigger id="provider">
+                      <SelectValue placeholder="Select a provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ollama-turbo">Ollama Turbo (Cloud)</SelectItem>
+                      <SelectItem value="local-ollama">Local Ollama</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground">
-                    Override the default API endpoint. You can include '/openai/v1' in the URL or just the base path. 
-                    The system will automatically handle the correct endpoint construction. Leave empty to use the default Ollama API at ollama.com.
+                    {settings.provider === 'local-ollama' 
+                      ? 'Use Ollama running locally on your machine. Requires Ollama to be installed and running.'
+                      : 'Use the cloud-hosted Ollama Turbo service at ollama.com'}
                   </p>
                 </div>
               </CardContent>
             </Card>
+
+            {/* API Settings - Only show for Ollama Turbo */}
+            {settings.provider !== 'local-ollama' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Key className="h-5 w-5 text-primary" />
+                    <span>API Configuration</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Configure your API credentials and endpoint settings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="api-key">Ollama API Key</Label>
+                    <div className="relative">
+                      <Input
+                        type={showApiKey ? "text" : "password"}
+                        id="api-key"
+                        name="OLLAMA_API_KEY"
+                        value={settings.OLLAMA_API_KEY || ''}
+                        onChange={handleChange}
+                        placeholder="Enter your API key"
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-10 w-10"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="custom-api-base-url">Custom API Base URL (Optional)</Label>
+                    <Input
+                      type="text"
+                      id="custom-api-base-url"
+                      name="customApiBaseUrl"
+                      value={settings.customApiBaseUrl || ''}
+                      onChange={handleChange}
+                      placeholder="e.g., https://api.openai.com/v1 or http://127.0.0.1:8000/api"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Override the default API endpoint. You can include '/openai/v1' in the URL or just the base path. 
+                      The system will automatically handle the correct endpoint construction. Leave empty to use the default Ollama API at ollama.com.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Local Ollama Configuration - Only show for Local Ollama */}
+            {settings.provider === 'local-ollama' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Server className="h-5 w-5 text-primary" />
+                    <span>Local Ollama Configuration</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Configure connection to your local Ollama server
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="local-ollama-url">Local Ollama URL</Label>
+                    <Input
+                      type="text"
+                      id="local-ollama-url"
+                      name="localOllamaUrl"
+                      value={settings.localOllamaUrl || 'http://localhost:11434'}
+                      onChange={handleChange}
+                      placeholder="http://localhost:11434"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      URL of your local Ollama server. Default is http://localhost:11434
+                    </p>
+                  </div>
+                  
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-medium mb-2">Quick Setup:</p>
+                    <ol className="text-xs text-muted-foreground space-y-1">
+                      <li>1. Install Ollama: <code className="bg-background px-1 rounded">brew install ollama</code></li>
+                      <li>2. Start server: <code className="bg-background px-1 rounded">ollama serve</code></li>
+                      <li>3. Pull a model: <code className="bg-background px-1 rounded">ollama pull llama3.3</code></li>
+                    </ol>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      const result = await window.electron.validateProvider();
+                      if (result.success) {
+                        setSaveStatus({ type: 'success', message: 'Successfully connected to local Ollama!' });
+                      } else {
+                        setSaveStatus({ type: 'error', message: result.error });
+                      }
+                    }}
+                  >
+                    Test Connection
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Generation Parameters */}
             <Card>
