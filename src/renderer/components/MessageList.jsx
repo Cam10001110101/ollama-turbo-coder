@@ -28,7 +28,7 @@ function MessageList({ messages = [], onToolCallExecute, onRemoveLastMessage }) 
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-500">
         <p className="text-center max-w-md">
-          Send a message to start a conversation with Groq
+          Send a message to start a conversation with Ollama Turbo
         </p>
       </div>
     );

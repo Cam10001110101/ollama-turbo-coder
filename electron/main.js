@@ -3,7 +3,7 @@ const fs   = require('fs');
 const path = require('path');
 const { globalShortcut } = require('electron');
 
-// Create ~/Library/Logs/Groq Desktop if it does not exist
+// Create ~/Library/Logs/Ollama Turbo Desktop if it does not exist
 app.setAppLogsPath();
 const logFile = path.join(app.getPath('logs'), 'main.log');
 const logStream = fs.createWriteStream(logFile, { flags: 'a' });
@@ -17,7 +17,7 @@ const logStream = fs.createWriteStream(logFile, { flags: 'a' });
   };
 });
 
-console.log('Groq Desktop started, logging to', logFile);
+console.log('Ollama Turbo Desktop started, logging to', logFile);
 
 // Import necessary Electron modules
 const { BrowserWindow, ipcMain, screen, shell } = require('electron');
@@ -26,7 +26,7 @@ const { BrowserWindow, ipcMain, screen, shell } = require('electron');
 const { MODEL_CONTEXT_SIZES, getModelContextSizes } = require('../shared/models.js');
 
 // Import handlers
-const chatHandler = require('./chatHandler');
+const ollamaHandler = require('./ollamaHandler');
 const toolHandler = require('./toolHandler');
 
 // Import new manager modules
@@ -53,8 +53,8 @@ let lastCapturedContext = null; // Store the most recent captured context
 let popupWindowManager = null; // Popup window manager instance
 
 function handleUrlProtocol(url) {
-  // Handle groq://context?text=...&title=... URLs
-  if (!url.startsWith('groq://')) return null;
+  // Handle ollama://context?text=...&title=... URLs
+  if (!url.startsWith('ollama://')) return null;
   
   try {
     const urlObj = new URL(url);
@@ -274,7 +274,7 @@ app.whenReady().then(async () => {
     // Merge base models with custom models from settings
     const mergedModelContextSizes = getModelContextSizes(currentSettings.customModels || {});
     
-    chatHandler.handleChatStream(event, messages, model, currentSettings, mergedModelContextSizes, discoveredTools);
+    ollamaHandler.handleChatStream(event, messages, model, currentSettings, mergedModelContextSizes, discoveredTools);
   });
 
   // Tool execution (use module object)

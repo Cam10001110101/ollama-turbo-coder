@@ -56,16 +56,31 @@ async function handleExecuteToolCall(event, toolCall, discoveredTools, mcpClient
     // Safely parse arguments
     let args;
     try {
-      // Handle cases where arguments might be null, undefined, or an empty string
-      if (toolCall.function.arguments === null || toolCall.function.arguments === undefined || toolCall.function.arguments.trim() === '') {
+      // Handle different types of arguments
+      const rawArgs = toolCall.function.arguments;
+      
+      if (rawArgs === null || rawArgs === undefined) {
           args = {}; // Treat as empty object if no arguments provided
+      } else if (typeof rawArgs === 'object') {
+          // Arguments are already an object (from Ollama)
+          args = rawArgs;
+      } else if (typeof rawArgs === 'string') {
+          // Arguments are a JSON string (standard format)
+          if (rawArgs.trim() === '') {
+              args = {}; // Empty string becomes empty object
+          } else {
+              args = JSON.parse(rawArgs);
+          }
       } else {
-          args = JSON.parse(toolCall.function.arguments);
+          // Unexpected type, try to convert to object
+          console.warn(`Unexpected argument type for tool "${toolName}":`, typeof rawArgs, rawArgs);
+          args = {};
       }
        // Optional: Validate parsed args against mcpTool.input_schema here
     } catch (parseError) {
       console.error(`Error parsing arguments for tool "${toolName}": ${parseError.message}`);
-      console.error(`Raw arguments string:`, toolCall.function.arguments);
+      console.error(`Raw arguments type:`, typeof toolCall.function.arguments);
+      console.error(`Raw arguments value:`, toolCall.function.arguments);
       return {
         error: `Failed to parse arguments for tool "${toolName}". Please ensure arguments are valid JSON. Error: ${parseError.message}`,
         tool_call_id: toolCallId
