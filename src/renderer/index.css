@@ -64,7 +64,7 @@
   }
   
   .btn-primary {
-    @apply bg-[#F55036] text-white hover:bg-[#F55036]/90;
+    @apply bg-black text-white hover:bg-black/80;
   }
   
   .input {

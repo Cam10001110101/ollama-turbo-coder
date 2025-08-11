@@ -5,7 +5,7 @@ const converter = new AnsiToHtml({ newline: true, colors: {
     0: '#000', // black
     1: '#B00', // red
     2: '#0B0', // green
-    3: '#FFB86C', // yellow (using a slightly more readable orange/yellow)
+    3: '#000000', // yellow (changed to black)
     4: '#61AFEF', // blue
     5: '#D556B1', // magenta
     6: '#56B6C2', // cyan
