@@ -210,4 +210,8 @@ Built with modern technologies for optimal performance and maintainability:
 
 ## License
 
-ISC
+MIT
+
+## Acknowledgements
+
+This project is based on [Groq Desktop Beta](https://github.com/groq/groq-desktop-beta) and has been adapted to work with Ollama and other local LLM providers.
