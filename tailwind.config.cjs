@@ -18,12 +18,12 @@ module.exports = {
       },
       colors: {
         primary: {
-          DEFAULT: "#F55036",
+          DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
         'user-message-bg': '#222326',
         'custom-dark-bg': '#121418',
-        'groq-orange': '#F55036',
+        'groq-orange': '#000000',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

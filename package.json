@@ -27,7 +27,7 @@
     "ai"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.2",
     "@radix-ui/react-select": "^2.2.5",
