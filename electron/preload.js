@@ -59,6 +59,14 @@ contextBridge.exposeInMainWorld('electron', {
   connectMcpServer: (serverConfig) => ipcRenderer.invoke('connect-mcp-server', serverConfig),
   disconnectMcpServer: (serverId) => ipcRenderer.invoke('disconnect-mcp-server', serverId),
   getMcpTools: () => ipcRenderer.invoke('get-mcp-tools'),
+  getMcpResources: () => ipcRenderer.invoke('get-mcp-resources'),
+  getMcpPrompts: () => ipcRenderer.invoke('get-mcp-prompts'),
+  readMcpResource: (uri, serverId) => ipcRenderer.invoke('read-mcp-resource', uri, serverId),
+  refreshMcpResources: () => ipcRenderer.invoke('refresh-mcp-resources'),
+  getMcpPrompt: (promptName, promptArguments, serverId) => ipcRenderer.invoke('get-mcp-prompt', promptName, promptArguments, serverId),
+  getPromptSuggestions: (context) => ipcRenderer.invoke('get-prompt-suggestions', context),
+  getPendingElicitations: () => ipcRenderer.invoke('get-pending-elicitations'),
+  cancelElicitation: (elicitationId) => ipcRenderer.invoke('cancel-elicitation', elicitationId),
   // Function to get model configurations
   getModelConfigs: () => ipcRenderer.invoke('get-model-configs'),
   
@@ -148,5 +156,9 @@ contextBridge.exposeInMainWorld('electron', {
   // Generic IPC renderer access (kept for backward compatibility)
   ipcRenderer: {
     invoke: (channel, data) => ipcRenderer.invoke(channel, data),
+    on: (channel, listener) => ipcRenderer.on(channel, listener),
+    once: (channel, listener) => ipcRenderer.once(channel, listener),
+    removeListener: (channel, listener) => ipcRenderer.removeListener(channel, listener),
+    send: (channel, ...args) => ipcRenderer.send(channel, ...args),
   },
 }); 

@@ -31,6 +31,9 @@ const { MODEL_CONTEXT_SIZES, getModelContextSizes } = require('../shared/models.
 // Import handlers
 const ollamaHandler = require('./ollamaHandler');
 const toolHandler = require('./toolHandler');
+const resourceHandler = require('./resourceHandler');
+const promptHandler = require('./promptHandler');
+const elicitationHandler = require('./elicitationHandler');
 
 // Import new manager modules
 const { initializeSettingsHandlers, loadSettings } = require('./settingsManager');
@@ -288,6 +291,42 @@ app.whenReady().then(async () => {
     return toolHandler.handleExecuteToolCall(event, toolCall, discoveredTools, mcpClients, currentSettings);
   });
   console.log("[Main Init] execute-tool-call registered successfully");
+
+  // Resource handlers
+  ipcMain.handle('read-mcp-resource', async (event, uri, serverId) => {
+    const currentSettings = loadSettings();
+    const { mcpClients } = mcpManager.getMcpState();
+    return resourceHandler.handleReadResource(event, uri, serverId, mcpClients, currentSettings);
+  });
+  
+  ipcMain.handle('refresh-mcp-resources', async () => {
+    const { mcpClients } = mcpManager.getMcpState();
+    return resourceHandler.handleRefreshResources(mcpClients);
+  });
+  console.log("[Main Init] Resource handlers registered successfully");
+
+  // Prompt handlers
+  ipcMain.handle('get-mcp-prompt', async (event, promptName, promptArguments, serverId) => {
+    const currentSettings = loadSettings();
+    const { mcpClients } = mcpManager.getMcpState();
+    return promptHandler.handleGetPrompt(event, promptName, promptArguments, serverId, mcpClients, currentSettings);
+  });
+  
+  ipcMain.handle('get-prompt-suggestions', async (event, context) => {
+    const { discoveredPrompts } = mcpManager.getMcpState();
+    return promptHandler.getPromptSuggestions(context, discoveredPrompts);
+  });
+  console.log("[Main Init] Prompt handlers registered successfully");
+
+  // Elicitation handlers
+  ipcMain.handle('get-pending-elicitations', async () => {
+    return elicitationHandler.getPendingElicitations();
+  });
+  
+  ipcMain.handle('cancel-elicitation', async (event, elicitationId) => {
+    return elicitationHandler.cancelElicitation(elicitationId);
+  });
+  console.log("[Main Init] Elicitation handlers registered successfully");
 
   // Model configs handler already registered above during early initialization
   console.log("[Main Init] Continuing with remaining handlers...");
