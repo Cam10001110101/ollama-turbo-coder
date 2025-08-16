@@ -1,13 +1,11 @@
 # Ollama Turbo Desktop
 
-A desktop chat application powered by Ollama's accelerated open-source models with full MCP (Model Context Protocol) support. Built with Electron, React, and the latest MCP SDK for seamless tool integration.
+A refactored version of [Groq Desktop](https://github.com/groq/groq-desktop-beta) for use with [Ollama Turbo](https://ollama.com/turbo) cloud inference (or local). The MCP implementaton is very well done and excels at MCP tool use. Built with Electron, React, and the latest MCP SDK for seamless tool integration.
 
 Available for Windows, macOS, and Linux!
 
-> **Note for macOS Users**: After installing on macOS, you may need to run this command to open the app:
-> ```sh
-> xattr -c /Applications/Ollama\ Turbo\ Desktop.app
-> ```
+> **Note [Groq Desktop](https://github.com/groq/groq-desktop-beta) provides an installable version while this is a a dev experiment**:
+
 
 ## Features
 
