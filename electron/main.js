@@ -1,3 +1,6 @@
+// Load polyfills first
+require('./polyfills');
+
 const { app } = require('electron');
 const fs   = require('fs');
 const path = require('path');

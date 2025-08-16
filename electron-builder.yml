@@ -1,5 +1,5 @@
-appId: com.groq.desktop
-productName: Groq Desktop
+appId: com.ollama.turbo
+productName: Ollama Turbo Desktop
 artifactName: "${productName}-${version}.${ext}"
 copyright: "Copyright © 2025 Groq"
 
@@ -8,6 +8,10 @@ directories:
   output: release
 
 files:
+  - "dist/**/*"
+  - "electron/**/*"
+  - "shared/**/*"
+  - "node_modules/**/*"
   - "!**/.vscode/*"
   - "!src/*"
   - "!electron.vite.config.{js,ts,mjs,cjs}"
@@ -16,7 +20,11 @@ files:
   - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
 
 extraMetadata:
-  main: dist/main/index.js
+  main: electron/main.js
+
+# Ensure all dependencies are properly included
+includeSubNodeModules: true
+nodeGypRebuild: false
 
 # macOS Configuration
 mac:
@@ -26,8 +34,9 @@ mac:
     - zip
   icon: build/icon.icns
   darkModeSupport: true
-  hardenedRuntime: true
+  hardenedRuntime: false
   gatekeeperAssess: false
+  identity: null
   extendInfo:
     NSRequiresAquaSystemAppearance: false
 
@@ -71,8 +80,8 @@ linux:
 
 publish:
   provider: github
-  owner: groq
-  repo: groq-desktop-beta
+  owner: Cam10001110101
+  repo: ollama-turbo-coder
 
 # Make sure scripts are executable
 fileAssociations:

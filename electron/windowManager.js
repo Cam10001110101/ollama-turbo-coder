@@ -8,6 +8,7 @@ function createWindow(screen, BrowserWindow) {
   mainWindow = new BrowserWindow({
     width: Math.min(1400, width),
     height: height,
+    icon: path.join(__dirname, '../build/icon.png'), // Use Ollama icon
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
