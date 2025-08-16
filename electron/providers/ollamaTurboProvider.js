@@ -1,3 +1,8 @@
+// Polyfill fetch for Node.js environment
+if (!global.fetch) {
+    global.fetch = require('node-fetch');
+}
+
 const { Ollama } = require('ollama');
 const BaseProvider = require('./baseProvider');
 const { pruneMessageHistory } = require('../messageUtils');
