@@ -4,7 +4,7 @@ A refactored version of [Groq Desktop](https://github.com/groq/groq-desktop-beta
 
 Available for Windows, macOS, and Linux!
 
-> **Note [Groq Desktop](https://github.com/groq/groq-desktop-beta) provides an installable version while this is a a dev experiment**:
+> **Note [Groq Desktop](https://github.com/groq/groq-desktop-beta) provides an installable version while this is a dev experiment demonstrated on Episode 12 of [The Build Podcast](https://www.youtube.com/@the-build-podcast)**:
 
 
 ## Features
