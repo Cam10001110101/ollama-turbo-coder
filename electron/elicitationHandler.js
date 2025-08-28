@@ -4,6 +4,7 @@
  */
 
 const { dialog } = require('electron');
+const { MCP_CONFIG, ERROR_MESSAGES } = require('./utils');
 
 // Store pending elicitations
 const pendingElicitations = new Map();
@@ -72,8 +73,8 @@ async function handleElicitation(elicitation, serverId, mainWindow) {
       const responseChannel = `mcp-elicitation-response-${id}`;
       const timeoutId = setTimeout(() => {
         pendingElicitations.delete(id);
-        reject(new Error('Elicitation response timeout'));
-      }, 60000); // 60 second timeout
+        reject(new Error(ERROR_MESSAGES.OPERATION_TIMEOUT('Elicitation response')));
+      }, MCP_CONFIG.TIMEOUTS.ELICITATION_RESPONSE);
       
       mainWindow.webContents.once(responseChannel, (event, response) => {
         clearTimeout(timeoutId);
@@ -152,7 +153,7 @@ function cancelElicitation(elicitationId) {
 /**
  * Clear old pending elicitations (cleanup)
  */
-function clearOldElicitations(maxAge = 300000) { // 5 minutes default
+function clearOldElicitations(maxAge = MCP_CONFIG.TIMEOUTS.CACHE_CLEANUP_INTERVAL) {
   const now = Date.now();
   for (const [id, elicitation] of pendingElicitations.entries()) {
     if (now - elicitation.timestamp > maxAge) {

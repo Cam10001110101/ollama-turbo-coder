@@ -1,4 +1,13 @@
-const { limitContentLength } = require('./utils');
+const { 
+  limitContentLength, 
+  MCP_CONFIG, 
+  ERROR_MESSAGES, 
+  validateStringParam, 
+  validateServerConnection,
+  createErrorResponse,
+  handleClientDisconnection,
+  isClientDisconnectionError 
+} = require('./utils');
 
 /**
  * Handles the 'get-mcp-prompt' IPC event.
@@ -14,27 +23,23 @@ const { limitContentLength } = require('./utils');
 async function handleGetPrompt(event, promptName, promptArguments, serverId, mcpClients, settings) {
   console.log(`Handling get-mcp-prompt for: ${promptName} from server: ${serverId}`);
 
-  // Basic validation
-  if (!promptName || typeof promptName !== 'string') {
+  // Validate prompt name
+  const promptNameValidation = validateStringParam(promptName, 'prompt name');
+  if (!promptNameValidation.isValid) {
     console.error('Invalid prompt name:', promptName);
-    return { error: "Invalid prompt name provided." };
+    return createErrorResponse(ERROR_MESSAGES.INVALID_PROMPT_NAME, settings);
   }
 
-  if (!serverId || typeof serverId !== 'string') {
-    console.error('Invalid server ID:', serverId);
-    return { error: "Invalid server ID provided." };
+  // Validate server connection
+  const serverValidation = validateServerConnection(serverId, mcpClients);
+  if (!serverValidation.isValid) {
+    console.error(`Server validation failed for ${serverId}:`, serverValidation.error);
+    return createErrorResponse(serverValidation.error, settings);
   }
+  
+  const client = serverValidation.client;
 
   try {
-    // Find the specific client instance that provides this prompt
-    const client = mcpClients[serverId];
-    if (!client) {
-      console.error(`MCP Client instance not found for server ID: ${serverId}`);
-      return {
-        error: `The server providing the prompt (ID: ${serverId}) is not currently connected.`
-      };
-    }
-
     // Get the prompt via the MCP client
     console.log(`Getting prompt "${promptName}" from server ${serverId} with args:`, promptArguments);
     try {
@@ -88,16 +93,24 @@ async function handleGetPrompt(event, promptName, promptArguments, serverId, mcp
       if (getError.stack) {
         console.error(getError.stack);
       }
-      return {
-        error: limitContentLength(`Error getting prompt "${promptName}": ${getError.message}`, settings.toolOutputLimit || 50000)
-      };
+      
+      // Check for client disconnection
+      if (isClientDisconnectionError(getError)) {
+        return handleClientDisconnection(getError, serverId, 'get prompt');
+      }
+      
+      return createErrorResponse(
+        `Error getting prompt "${promptName}": ${getError.message}`, 
+        settings
+      );
     }
 
   } catch (handlerError) {
     console.error(`Unexpected error in handleGetPrompt for "${promptName}":`, handlerError);
-    return {
-      error: limitContentLength(`Internal error while getting prompt "${promptName}": ${handlerError.message}`)
-    };
+    return createErrorResponse(
+      `Internal error while getting prompt "${promptName}": ${handlerError.message}`,
+      settings
+    );
   }
 }
 
@@ -187,7 +200,33 @@ function validatePromptArguments(promptSchema, providedArguments) {
  * Cache for prompt templates
  */
 const promptCache = new Map();
-const PROMPT_CACHE_TTL = 300000; // 5 minutes TTL
+
+/**
+ * Periodic cleanup for expired prompt cache entries
+ */
+function setupPromptCacheCleanup() {
+  const cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    let removedCount = 0;
+    
+    for (const [key, cached] of promptCache.entries()) {
+      if (now - cached.timestamp > MCP_CONFIG.TIMEOUTS.PROMPT_CACHE_TTL) {
+        promptCache.delete(key);
+        removedCount++;
+      }
+    }
+    
+    if (removedCount > 0) {
+      console.log(`Prompt cache cleanup: removed ${removedCount} expired entries`);
+    }
+  }, MCP_CONFIG.TIMEOUTS.CACHE_CLEANUP_INTERVAL);
+  
+  // Return cleanup function to stop the interval if needed
+  return () => clearInterval(cleanupInterval);
+}
+
+// Initialize cache cleanup on module load
+const stopCacheCleanup = setupPromptCacheCleanup();
 
 /**
  * Gets a prompt from cache or fetches it if not cached.
@@ -205,7 +244,7 @@ async function getCachedPrompt(promptName, promptArguments, serverId, mcpClients
   const cacheKey = `${serverId}:${promptName}:${argHash}`;
   const cached = promptCache.get(cacheKey);
   
-  if (cached && Date.now() - cached.timestamp < PROMPT_CACHE_TTL) {
+  if (cached && Date.now() - cached.timestamp < MCP_CONFIG.TIMEOUTS.PROMPT_CACHE_TTL) {
     console.log(`Returning cached prompt: ${promptName}`);
     return cached.data;
   }
@@ -235,5 +274,6 @@ module.exports = {
   getPromptSuggestions,
   validatePromptArguments,
   getCachedPrompt,
-  clearPromptCache
+  clearPromptCache,
+  stopCacheCleanup
 };
