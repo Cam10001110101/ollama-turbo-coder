@@ -273,14 +273,17 @@ app.whenReady().then(async () => {
 
   // --- Register Core App IPC Handlers --- //
   // Chat completion (use module object)
-  ipcMain.on('chat-stream', async (event, messages, model) => {
+  ipcMain.on('chat-stream', async (event, messages, model, options = {}) => {
     const currentSettings = loadSettings();
     const { discoveredTools } = mcpManager.getMcpState(); // Use module object
     
     // Merge base models with custom models from settings
     const mergedModelContextSizes = getModelContextSizes(currentSettings.customModels || {});
     
-    ollamaHandler.handleChatStream(event, messages, model, currentSettings, mergedModelContextSizes, discoveredTools);
+    // Merge options into settings (options override settings)
+    const settingsWithOptions = { ...currentSettings, ...options };
+    
+    ollamaHandler.handleChatStream(event, messages, model, settingsWithOptions, mergedModelContextSizes, discoveredTools);
   });
 
   // Tool execution (use module object)

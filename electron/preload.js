@@ -9,9 +9,9 @@ contextBridge.exposeInMainWorld('electron', {
   executeToolCall: (toolCall) => ipcRenderer.invoke('execute-tool-call', toolCall),
   
   // Streaming API events
-  startChatStream: (messages, model) => {
-    // Start a new chat stream
-    ipcRenderer.send('chat-stream', messages, model);
+  startChatStream: (messages, model, options = {}) => {
+    // Start a new chat stream with optional settings
+    ipcRenderer.send('chat-stream', messages, model, options);
     
     // Setup event listeners for streaming responses
     return {

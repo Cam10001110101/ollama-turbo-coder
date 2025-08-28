@@ -73,6 +73,13 @@ function App() {
   const [mcpTools, setMcpTools] = useState([]);
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(false);
   const [mcpServersStatus, setMcpServersStatus] = useState({ loading: false, message: "" });
+  // Unified reasoning control state
+  // For DeepSeek: boolean (true/false)
+  // For gpt-oss: string ('off', 'low', 'medium', 'high')
+  const [reasoningMode, setReasoningMode] = useState({
+    deepseek: true,
+    gptoss: 'medium'
+  });
   const messagesEndRef = useRef(null);
   // Store the list of models from capabilities keys
   // const models = Object.keys(MODEL_CONTEXT_SIZES).filter(key => key !== 'default'); // Old way
@@ -178,11 +185,15 @@ function App() {
                 // If saved model is invalid, keep the default fallback (first available model)
                 console.warn(`Saved model "${settings.model}" not found in loaded configs. Falling back to ${effectiveModel}.`);
             }
-        } else if (availableModels.length > 0) {
-             // If no model saved in settings, but models are available, use the first one
-            effectiveModel = availableModels[0];
         }
-        // If no model in settings and no available models, effectiveModel remains 'default'
+        
+        // Load think mode preference from settings
+        if (settings && settings.reasoningMode) {
+            setReasoningMode(settings.reasoningMode);
+        } else if (settings && settings.thinkMode !== undefined) {
+            // Legacy support for old thinkMode setting
+            setReasoningMode(prev => ({ ...prev, deepseek: settings.thinkMode }));
+        }
 
         setSelectedModel(effectiveModel); // Set the final selected model state
 
@@ -315,6 +326,29 @@ function App() {
     // Depend on initialLoadComplete as well to trigger after load finishes
   }, [selectedModel, initialLoadComplete, models]);
 
+  // Effect to save think mode preference
+  useEffect(() => {
+    // Skip saving on initial load or if models aren't loaded
+    if (!initialLoadComplete || models.length === 0) {
+        return;
+    }
+
+    const saveThinkModePreference = async () => {
+      try {
+        const settings = await window.electron.getSettings();
+        // Check if the think mode actually changed before saving
+        if (JSON.stringify(settings.reasoningMode) !== JSON.stringify(reasoningMode)) {
+            console.log(`Saving reasoning mode preferences:`, reasoningMode);
+            await window.electron.saveSettings({ ...settings, reasoningMode });
+        }
+      } catch (error) {
+        console.error('Error saving think mode preference:', error);
+      }
+    };
+
+    saveThinkModePreference();
+  }, [reasoningMode, initialLoadComplete, models]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -420,8 +454,19 @@ function App() {
         };
         setMessages(prev => [...prev, assistantPlaceholder]);
 
-        // Start streaming chat
-        const streamHandler = window.electron.startChatStream(turnMessages, selectedModel);
+        // Start streaming chat with reasoning options
+        let reasoningOptions = {};
+        
+        // Determine reasoning parameters based on model
+        if (selectedModel?.toLowerCase().includes('deepseek')) {
+            // DeepSeek uses boolean think parameter
+            reasoningOptions.thinkMode = reasoningMode.deepseek;
+        } else if (selectedModel?.toLowerCase().includes('gpt-oss')) {
+            // gpt-oss uses reasoning_effort parameter
+            reasoningOptions.reasoningEffort = reasoningMode.gptoss;
+        }
+        
+        const streamHandler = window.electron.startChatStream(turnMessages, selectedModel, reasoningOptions);
 
         // Collect the final message data
         let finalAssistantData = {
@@ -1001,6 +1046,8 @@ function App() {
                     onModelChange={setSelectedModel}
                     onOpenMcpTools={() => setIsToolsPanelOpen(true)}
                     modelConfigs={modelConfigs}
+                    reasoningMode={reasoningMode}
+                    onReasoningModeChange={setReasoningMode}
                   />
                 </div>
               </div>
@@ -1026,6 +1073,8 @@ function App() {
                     onModelChange={setSelectedModel}
                     onOpenMcpTools={() => setIsToolsPanelOpen(true)}
                     modelConfigs={modelConfigs}
+                    reasoningMode={reasoningMode}
+                    onReasoningModeChange={setReasoningMode}
                   />
                 </div>
               </div>

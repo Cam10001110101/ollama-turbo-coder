@@ -39,15 +39,17 @@ class OllamaTurboProvider extends BaseProvider {
                 await this.initialize();
             }
 
-            // Try a simple API call to validate the connection
-            // Using a minimal chat request that should work with any model
-            const response = await this.client.chat({
-                model: 'gpt-oss:20b',
-                messages: [{ role: 'user', content: 'test' }],
-                stream: false
-            });
-
-            return { success: true };
+            // Try to list models to validate the connection
+            const models = await this.client.list();
+            
+            if (models && models.models && models.models.length > 0) {
+                return { success: true };
+            } else {
+                return { 
+                    success: false, 
+                    error: 'No models available'
+                };
+            }
         } catch (error) {
             return { 
                 success: false, 
@@ -57,24 +59,69 @@ class OllamaTurboProvider extends BaseProvider {
     }
 
     async listModels() {
-        // For Ollama Turbo, we return the known hosted models
-        // In the future, this could make an API call to get available models
-        return [
-            {
-                id: 'gpt-oss:20b',
-                name: 'GPT-OSS 20B',
-                context: 131072,
-                vision: false,
-                builtin_tools: false
-            },
-            {
-                id: 'gpt-oss:120b',
-                name: 'GPT-OSS 120B',
-                context: 131072,
-                vision: false,
-                builtin_tools: false
+        try {
+            if (!this.isInitialized) {
+                await this.initialize();
             }
-        ];
+
+            // Fetch models dynamically from the API
+            const response = await this.client.list();
+            
+            if (response && response.models && Array.isArray(response.models)) {
+                // Map the API response to our expected format
+                return response.models.map(model => {
+                    // Create a clean display name from the model ID
+                    let displayName = model.name;
+                    
+                    // Format common patterns for better display
+                    displayName = displayName
+                        .replace(/:latest$/, '')  // Remove :latest suffix
+                        .replace(/-/, ' ')         // Replace dashes with spaces
+                        .replace(/v(\d+\.\d+)/, 'V$1')  // Format version numbers
+                        .replace(/(\d+)b$/i, ' $1B')    // Format parameter counts (e.g., 20b -> 20B)
+                        .replace(/:(\d+)b$/i, ' $1B');  // Format parameter counts with colon
+                    
+                    // Capitalize known acronyms
+                    displayName = displayName
+                        .replace(/\bgpt\b/gi, 'GPT')
+                        .replace(/\boss\b/gi, 'OSS')
+                        .replace(/\bllm\b/gi, 'LLM')
+                        .replace(/\bai\b/gi, 'AI');
+                    
+                    // Title case the name
+                    displayName = displayName.split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                    
+                    // Add model size info if available
+                    if (model.size) {
+                        const sizeGB = Math.round(model.size / (1024 * 1024 * 1024));
+                        if (sizeGB > 0) {
+                            displayName += ` (${sizeGB}GB)`;
+                        }
+                    }
+                    
+                    // Use model metadata if provided, otherwise use sensible defaults
+                    const context = model.context || 131072; // Default 128K
+                    const vision = model.vision || false;
+                    const builtin_tools = model.tools || false;
+                    
+                    return {
+                        id: model.name,
+                        name: displayName,
+                        context: context,
+                        vision: vision,
+                        builtin_tools: builtin_tools
+                    };
+                });
+            }
+        } catch (error) {
+            console.warn('Failed to fetch models from API:', error.message);
+        }
+
+        // Minimal fallback - just return empty array or a single default model
+        console.warn('Using empty model list - models will be fetched when available');
+        return [];
     }
 
     async handleChatStream(event, messages, model, modelContextSizes, discoveredTools) {
@@ -83,7 +130,7 @@ class OllamaTurboProvider extends BaseProvider {
                 await this.initialize();
             }
 
-            const modelToUse = model || this.settings.model || "gpt-oss:120b";
+            const modelToUse = model || this.settings.model || ""; // No hardcoded default
             const modelInfo = modelContextSizes[modelToUse] || modelContextSizes['default'] || { 
                 context: 131072, 
                 vision_supported: false 
@@ -140,13 +187,39 @@ class OllamaTurboProvider extends BaseProvider {
                     top_p: this.settings.top_p ?? 0.95,
                 }
             };
+            
+            // Check if model supports special features based on its name/metadata
+            // Models can indicate support via their name patterns
+            const modelSupportsDeepseekThinking = modelToUse.includes('deepseek') && modelToUse.includes('v3');
+            const modelSupportsGptOssReasoning = modelToUse.includes('gpt-oss');
+            const modelSupportsTools = !modelSupportsDeepseekThinking; // For now, disable tools when thinking is enabled
+            
+            // Add think parameter for DeepSeek models
+            if (modelSupportsDeepseekThinking) {
+                // Use explicit setting if provided, otherwise default to true for supported models
+                apiParams.think = this.settings.thinkMode !== undefined ? this.settings.thinkMode : true;
+            }
+            
+            // Add reasoning_effort parameter for gpt-oss models
+            if (modelSupportsGptOssReasoning) {
+                const reasoningEffort = this.settings.reasoningEffort || 'medium';
+                // gpt-oss expects reasoning_effort in extra_body or as system prompt
+                if (reasoningEffort !== 'off') {
+                    apiParams.extra_body = { reasoning_effort: reasoningEffort };
+                }
+            }
 
-            // Add tools if available
-            if (tools.length > 0) {
+            // Add tools if available and supported by the model
+            if (tools.length > 0 && modelSupportsTools) {
                 apiParams.tools = tools;
             }
 
             console.log(`Starting Ollama Turbo chat with model: ${modelToUse}`);
+            console.log('API params:', JSON.stringify({
+                ...apiParams,
+                messages: `[${apiParams.messages.length} messages]`,
+                tools: apiParams.tools ? `[${apiParams.tools.length} tools]` : undefined
+            }, null, 2));
 
             // Track accumulated data
             const accumulatedData = {
@@ -222,9 +295,20 @@ class OllamaTurboProvider extends BaseProvider {
 
         } catch (error) {
             console.error('Ollama Turbo streaming error:', error);
+            
+            // Try to get more details about the error
+            let errorMessage = error.message || 'Unknown error';
+            if (error.status_code === 502) {
+                errorMessage = 'Service temporarily unavailable (502). The model might be loading or under heavy load. Please try again in a moment.';
+                console.log('502 Error - Model:', modelToUse);
+                console.log('502 Error - Think enabled:', apiParams.think || false);
+                console.log('502 Error - Tools count:', apiParams.tools?.length || 0);
+            }
+            
             event.sender.send('chat-stream-error', {
-                error: `Failed to get chat completion: ${error.message}`,
-                details: error
+                error: errorMessage,
+                details: error,
+                model: modelToUse
             });
         }
     }
