@@ -61,3 +61,7 @@ CLAUDE.md
 .pnpm-store/
 .yarn/
 .yarnrc.yml
+
+# Test directories
+cam_docs/
+cam_tests/

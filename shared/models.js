@@ -15,6 +15,12 @@ const BASE_MODEL_CONTEXT_SIZES = {
     vision_supported: false,
     builtin_tools_supported: false,
     displayName: "GPT-OSS 120B"
+  },
+  "deepseek-v3.1:671b": {
+    context: 163840,
+    vision_supported: false,
+    builtin_tools_supported: true,
+    displayName: "DeepSeek V3.1 671B"
   }
 };
 

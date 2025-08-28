@@ -6,6 +6,7 @@ const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio
 const { SSEClientTransport } = require('@modelcontextprotocol/sdk/client/sse.js');
 const { StreamableHTTPClientTransport } = require('@modelcontextprotocol/sdk/client/streamableHttp.js');
 const { getTokensForServer, getClientInfoForServer } = require('./authManager');
+const { setupElicitationHandlers } = require('./elicitationHandler');
 
 // Custom Error for Auth Requirement
 class AuthorizationRequiredError extends Error {
@@ -18,6 +19,8 @@ class AuthorizationRequiredError extends Error {
 // State variables managed by this module
 let mcpClients = {};
 let discoveredTools = [];
+let discoveredResources = [];
+let discoveredPrompts = [];
 const mcpServerLogs = {};
 const MAX_LOG_LINES = 500; // Limit stored log lines per server
 
@@ -36,6 +39,8 @@ function notifyMcpServerStatus() {
   if (mainWindowInstance && !mainWindowInstance.isDestroyed() && mainWindowInstance.webContents) {
     mainWindowInstance.webContents.send('mcp-server-status-changed', {
       tools: [...discoveredTools], // Send a copy
+      resources: [...discoveredResources], // Send a copy
+      prompts: [...discoveredPrompts], // Send a copy
       connectedServers: Object.keys(mcpClients)
     });
      console.log('Notified renderer of MCP status change.');
@@ -87,8 +92,10 @@ function setupServerHealthCheck(client, serverId, intervalMs) {
       // Clean up the failed client connection
        if (mcpClients[serverId] === client) { // Ensure we're removing the correct client instance
            delete mcpClients[serverId];
-           // Remove tools associated with this server
+           // Remove tools, resources, and prompts associated with this server
            discoveredTools = discoveredTools.filter(t => t.serverId !== serverId);
+           discoveredResources = discoveredResources.filter(r => r.serverId !== serverId);
+           discoveredPrompts = discoveredPrompts.filter(p => p.serverId !== serverId);
            // Clear logs for the failed server
            delete mcpServerLogs[serverId];
            // Notify renderer about the disconnection due to health check failure
@@ -140,6 +147,8 @@ async function connectMcpServerProcess(serverId, connectionDetails, authProvider
         try { await oldClient.close(); } catch (e) { console.warn(`Error closing previous client ${serverId}: ${e.message}`); }
         delete mcpClients[serverId];
         discoveredTools = discoveredTools.filter(t => t.serverId !== serverId);
+        discoveredResources = discoveredResources.filter(r => r.serverId !== serverId);
+        discoveredPrompts = discoveredPrompts.filter(p => p.serverId !== serverId);
         delete mcpServerLogs[serverId];
         notifyMcpServerStatus(); // Notify UI about cleanup
     }
@@ -168,7 +177,19 @@ async function connectMcpServerProcess(serverId, connectionDetails, authProvider
     }
 
     // --- Create Client and Transport ---
-    const client = new Client({ name: "groq-desktop", version: appInstance.getVersion(), capabilities: { tools: true } });
+    const client = new Client({ 
+        name: "ollama-turbo-desktop", 
+        version: appInstance.getVersion(), 
+        capabilities: { 
+            tools: true,
+            resources: true,
+            prompts: true,
+            elicitations: true,
+            discovery: true,
+            sampling: true,
+            roots: true
+        }
+    });
     let transport;
     mcpServerLogs[serverId] = [];
 
@@ -320,9 +341,64 @@ async function connectMcpServerProcess(serverId, connectionDetails, authProvider
             console.warn(`[${serverId}] listTools returned no tools or invalid format.`);
         }
 
+        // --- List Resources ---
+        console.log(`[${serverId}] Listing resources...`);
+        let serverResources = [];
+        try {
+            const resourcesResult = await Promise.race([
+                client.listResources(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error(`listResources timed out`)), listToolsTimeout))
+            ]);
+            
+            if (resourcesResult && resourcesResult.resources && Array.isArray(resourcesResult.resources)) {
+                serverResources = resourcesResult.resources.map(resource => ({
+                    uri: resource.uri || '',
+                    name: resource.name || 'unnamed_resource',
+                    description: resource.description || 'No description',
+                    mimeType: resource.mimeType,
+                    serverId: serverId
+                }));
+                console.log(`[${serverId}] Discovered ${serverResources.length} resources.`);
+            }
+        } catch (resourceError) {
+            console.warn(`[${serverId}] Failed to list resources:`, resourceError.message);
+        }
+
+        // --- List Prompts ---
+        console.log(`[${serverId}] Listing prompts...`);
+        let serverPrompts = [];
+        try {
+            const promptsResult = await Promise.race([
+                client.listPrompts(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error(`listPrompts timed out`)), listToolsTimeout))
+            ]);
+            
+            if (promptsResult && promptsResult.prompts && Array.isArray(promptsResult.prompts)) {
+                serverPrompts = promptsResult.prompts.map(prompt => ({
+                    name: prompt.name || 'unnamed_prompt',
+                    description: prompt.description || 'No description',
+                    arguments: prompt.arguments || [],
+                    serverId: serverId
+                }));
+                console.log(`[${serverId}] Discovered ${serverPrompts.length} prompts.`);
+            }
+        } catch (promptError) {
+            console.warn(`[${serverId}] Failed to list prompts:`, promptError.message);
+        }
+
         // --- Update Global State and Notify ---
         const existingTools = discoveredTools.filter(t => t.serverId !== serverId);
+        const existingResources = discoveredResources.filter(r => r.serverId !== serverId);
+        const existingPrompts = discoveredPrompts.filter(p => p.serverId !== serverId);
+        
         discoveredTools = [...existingTools, ...serverTools]; // Combine existing from other servers + new
+        discoveredResources = [...existingResources, ...serverResources];
+        discoveredPrompts = [...existingPrompts, ...serverPrompts];
+        
+        // Set up elicitation handlers for bidirectional communication
+        setupElicitationHandlers(client, serverId, mainWindowInstance);
+        console.log(`[${serverId}] Elicitation handlers set up.`);
+        
         setupServerHealthCheck(client, serverId, healthCheckIntervalMs);
         notifyMcpServerStatus();
 
@@ -357,6 +433,8 @@ async function connectMcpServerProcess(serverId, connectionDetails, authProvider
              transport.stderr.removeAllListeners();
          }
          discoveredTools = discoveredTools.filter(t => t.serverId !== serverId);
+         discoveredResources = discoveredResources.filter(r => r.serverId !== serverId);
+         discoveredPrompts = discoveredPrompts.filter(p => p.serverId !== serverId);
          delete mcpServerLogs[serverId];
          notifyMcpServerStatus();
 
@@ -572,14 +650,20 @@ function initializeMcpHandlers(ipcMain, app, mainWindow, loadSettings, resolveCo
                 try { await client.close(); console.log(`Closed connection to ${serverId}`); } catch(e) { console.error(`Error closing client ${serverId}:`, e); }
                 delete mcpClients[serverId];
                 const initialToolCount = discoveredTools.length;
+                const initialResourceCount = discoveredResources.length;
+                const initialPromptCount = discoveredPrompts.length;
                 discoveredTools = discoveredTools.filter(t => t.serverId !== serverId);
-                console.log(`Removed ${initialToolCount - discoveredTools.length} tools for ${serverId}`);
+                discoveredResources = discoveredResources.filter(r => r.serverId !== serverId);
+                discoveredPrompts = discoveredPrompts.filter(p => p.serverId !== serverId);
+                console.log(`Removed ${initialToolCount - discoveredTools.length} tools, ${initialResourceCount - discoveredResources.length} resources, ${initialPromptCount - discoveredPrompts.length} prompts for ${serverId}`);
                 delete mcpServerLogs[serverId]; // Clear logs on disconnect
                 notifyMcpServerStatus();
                 return { success: true, allTools: discoveredTools };
             } else {
                 console.log(`No active client found for ${serverId} to disconnect.`);
                 discoveredTools = discoveredTools.filter(t => t.serverId !== serverId);
+                discoveredResources = discoveredResources.filter(r => r.serverId !== serverId);
+                discoveredPrompts = discoveredPrompts.filter(p => p.serverId !== serverId);
                 delete mcpServerLogs[serverId]; // Ensure logs are cleared even if client was lost
                 notifyMcpServerStatus();
                 return { success: true, message: "No active client found.", allTools: discoveredTools };
@@ -593,6 +677,16 @@ function initializeMcpHandlers(ipcMain, app, mainWindow, loadSettings, resolveCo
     // Handler for getting all discovered tools
     ipcMain.handle('get-mcp-tools', async () => {
       return { tools: [...discoveredTools] }; // Return a copy
+    });
+
+    // Handler for getting all discovered resources
+    ipcMain.handle('get-mcp-resources', async () => {
+      return { resources: [...discoveredResources] }; // Return a copy
+    });
+
+    // Handler for getting all discovered prompts
+    ipcMain.handle('get-mcp-prompts', async () => {
+      return { prompts: [...discoveredPrompts] }; // Return a copy  
     });
 
     // Handler for getting MCP server logs
@@ -611,7 +705,9 @@ function initializeMcpHandlers(ipcMain, app, mainWindow, loadSettings, resolveCo
 function getMcpState() {
     return {
         mcpClients,
-        discoveredTools
+        discoveredTools,
+        discoveredResources,
+        discoveredPrompts
     };
 }
 

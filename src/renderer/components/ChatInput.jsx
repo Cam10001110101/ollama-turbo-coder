@@ -1,4 +1,4 @@
-import { ArrowUp, Loader2, ImagePlus, Hammer, Upload, Zap, ZapOff } from "lucide-react";
+import { ArrowUp, Loader2, ImagePlus, Hammer, Upload, Lightbulb, LightbulbOff } from "lucide-react";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import TextAreaAutosize from "react-textarea-autosize";
 import { 
@@ -21,6 +21,8 @@ function ChatInput({
 	onModelChange,
 	onOpenMcpTools,
 	modelConfigs = {},
+	reasoningMode = { deepseek: true, gptoss: 'medium' },
+	onReasoningModeChange,
 }) {
 	const [message, setMessage] = useState("");
 	const [suggestion, setSuggestion] = useState("");
@@ -468,21 +470,94 @@ function ChatInput({
 							</div>
 						)}
 						
-						{/* Model Selector */}
-						<Select value={selectedModel} onValueChange={onModelChange}>
-							<SelectTrigger className="w-48 h-8 rounded-xl border-border/50 bg-background/50 text-sm text-foreground">
-								<SelectValue placeholder="Select model" className="text-foreground">
-									{selectedModel ? getModelDisplayName(selectedModel) : "Select model"}
-								</SelectValue>
-							</SelectTrigger>
-							<SelectContent className="rounded-xl">
-								{models.map(model => (
-									<SelectItem key={model} value={model} className="rounded-lg text-foreground">
-										{getModelDisplayName(model)}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						{/* Model Selector with Think Mode Toggle */}
+						<div className="flex items-center gap-1">
+							{/* Reasoning Mode Toggle - Positioned left of model selector */}
+							{selectedModel && (selectedModel.toLowerCase().includes('deepseek') || selectedModel.toLowerCase().includes('gpt-oss')) && (
+								<Button
+									type="button"
+									onClick={() => {
+										if (!onReasoningModeChange) return;
+										
+										const modelLower = selectedModel.toLowerCase();
+										
+										if (modelLower.includes('deepseek')) {
+											// Binary toggle for DeepSeek
+											onReasoningModeChange(prev => ({
+												...prev,
+												deepseek: !prev.deepseek
+											}));
+										} else if (modelLower.includes('gpt-oss')) {
+											// Cycle through levels for gpt-oss: off -> low -> medium -> high -> off
+											const levels = ['off', 'low', 'medium', 'high'];
+											const currentIndex = levels.indexOf(reasoningMode.gptoss);
+											const nextIndex = (currentIndex + 1) % levels.length;
+											onReasoningModeChange(prev => ({
+												...prev,
+												gptoss: levels[nextIndex]
+											}));
+										}
+									}}
+									size="icon"
+									variant="ghost"
+									className="h-8 w-8 rounded-lg hover:bg-muted/50"
+									title={(() => {
+										const modelLower = selectedModel.toLowerCase();
+										if (modelLower.includes('deepseek')) {
+											return reasoningMode.deepseek 
+												? "Thinking mode enabled (slower, more thoughtful)"
+												: "Fast mode enabled (quicker responses)";
+										} else if (modelLower.includes('gpt-oss')) {
+											return `Reasoning effort: ${reasoningMode.gptoss} (click to cycle)`;
+										}
+										return "";
+									})()}
+								>
+									{(() => {
+										const modelLower = selectedModel.toLowerCase();
+										
+										if (modelLower.includes('deepseek')) {
+											// DeepSeek binary state
+											return reasoningMode.deepseek ? (
+												<Lightbulb size={16} className="text-primary" />
+											) : (
+												<LightbulbOff size={16} className="text-muted-foreground" />
+											);
+										} else if (modelLower.includes('gpt-oss')) {
+											// gpt-oss multi-level state with different colors
+											switch(reasoningMode.gptoss) {
+												case 'off':
+													return <LightbulbOff size={16} className="text-muted-foreground line-through" />;
+												case 'low':
+													return <Lightbulb size={16} className="text-blue-500" />;
+												case 'medium':
+													return <Lightbulb size={16} className="text-yellow-500" />;
+												case 'high':
+													return <Lightbulb size={16} className="text-green-500" />;
+												default:
+													return <Lightbulb size={16} className="text-yellow-500" />;
+											}
+										}
+										return null;
+									})()}
+								</Button>
+							)}
+							
+							<Select value={selectedModel} onValueChange={onModelChange}>
+								<SelectTrigger className="w-48 h-8 rounded-xl border-border/50 bg-background/50 text-sm text-foreground">
+									<SelectValue placeholder="Select model" className="text-foreground">
+										{selectedModel ? getModelDisplayName(selectedModel) : "Select model"}
+									</SelectValue>
+								</SelectTrigger>
+								<SelectContent className="rounded-xl">
+									{models.map(model => (
+										<SelectItem key={model} value={model} className="rounded-lg text-foreground">
+											{getModelDisplayName(model)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
 				</div>
 			</div>
